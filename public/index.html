@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIS Phraser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>LIS Phraser</h1>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="create">Crea frase</button>
+      <button class="tab-btn" data-tab="saved">Frasi salvate</button>
+      <button class="tab-btn" data-tab="categories">Categorie</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-create" class="tab-panel active">
+      <div class="search-box">
+        <input id="search-input" type="text" placeholder="Cerca una parola (es. ciao)" autocomplete="off">
+        <div id="search-results" class="search-results"></div>
+      </div>
+
+      <div class="phrase-builder">
+        <h2>Frase in costruzione</h2>
+        <div id="phrase-words" class="phrase-words">
+          <p class="empty-hint">Cerca una parola sopra e aggiungila alla frase.</p>
+        </div>
+
+        <div class="phrase-fields">
+          <input id="phrase-name" type="text" placeholder="Nome frase (es. Buongiorno amico)">
+          <input id="phrase-tags" type="text" placeholder="Tag, separati da virgola (opzionale)">
+        </div>
+
+        <div class="phrase-actions">
+          <button id="play-sequence" class="icon-btn icon-btn-lg" title="Riproduci frase" disabled>▶</button>
+          <button id="save-phrase" class="btn-primary" disabled>Salva frase</button>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="tab-saved" class="tab-panel">
+      <h2>Frasi salvate</h2>
+      <div id="saved-list" class="saved-list"></div>
+    </section>
+
+    <section id="tab-categories" class="tab-panel">
+      <h2>Categorie</h2>
+      <p class="section-hint">Raccolte di segni per argomento. Tocca un segno per aggiungerlo alla frase in costruzione.</p>
+
+      <div class="new-category-box">
+        <input id="new-category-name" type="text" placeholder="Nuova categoria (es. Colori)">
+        <button id="add-category-btn" class="btn-primary">Crea</button>
+      </div>
+
+      <div id="categories-list" class="categories-list"></div>
+    </section>
+  </main>
+
+  <div id="player-modal" class="player-modal hidden">
+    <div class="player-modal-content">
+      <button id="player-close" class="player-close icon-btn" title="Chiudi">✕</button>
+      <video id="sequence-player" muted playsinline autoplay></video>
+      <p id="player-label" class="player-label"></p>
+
+      <div class="player-transport">
+        <button id="player-restart" class="icon-btn" title="Torna all'inizio">⏮</button>
+        <button id="player-playpause" class="icon-btn icon-btn-lg" title="Play/Pausa">⏸</button>
+      </div>
+
+      <div class="speed-control">
+        <span>Velocità</span>
+        <input id="speed-range" type="range" min="0.5" max="2" step="0.05" value="1">
+        <span id="speed-value">1.00x</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

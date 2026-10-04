@@ -1,0 +1,142 @@
+[
+  {
+    "id": "11f7fc0f-93b8-4967-9d99-2ad5f3757e04",
+    "name": "Numeri",
+    "words": [
+      {
+        "title": "zero",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/453562.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/453562.jpg",
+        "path": "/it.it/word/1856/zero/0/"
+      },
+      {
+        "title": "uno",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/147171.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/147171.jpg",
+        "path": "/it.it/word/639/uno/0/"
+      },
+      {
+        "title": "due",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/275631.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/275631.jpg",
+        "path": "/it.it/word/7396/due/0/"
+      },
+      {
+        "title": "tre",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/469927.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/469927.jpg",
+        "path": "/it.it/word/7243/tre/0/"
+      },
+      {
+        "title": "quattro",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/496985.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/496985.jpg",
+        "path": "/it.it/word/8995/quattro/0/"
+      },
+      {
+        "title": "cinque",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/468223.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/468223.jpg",
+        "path": "/it.it/word/8023/cinque/0/"
+      },
+      {
+        "title": "sei",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/468453.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/468453.jpg",
+        "path": "/it.it/word/11524/sei/0/"
+      },
+      {
+        "title": "sette",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/452597.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/452597.jpg",
+        "path": "/it.it/word/21617/sette/0/"
+      },
+      {
+        "title": "otto",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/206487.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/206487.jpg",
+        "path": "/it.it/word/9036/otto/0/"
+      },
+      {
+        "title": "nove",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/453571.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/453571.jpg",
+        "path": "/it.it/word/25532/nove/0/"
+      },
+      {
+        "title": "dieci",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/147172.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/147172.jpg",
+        "path": "/it.it/word/648/dieci/0/"
+      }
+    ],
+    "createdAt": 1790171733184
+  },
+  {
+    "id": "d5cd2871-16a2-45e4-8477-f18db5eac817",
+    "name": "Simboli matematici",
+    "words": [
+      {
+        "title": "più",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/279702.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/279702.jpg",
+        "path": "/it.it/word/13551/piu/0/"
+      },
+      {
+        "title": "meno",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/463026.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/463026.jpg",
+        "path": "/it.it/word/13506/meno/0/"
+      },
+      {
+        "title": "moltiplicare",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/201806.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/201806.jpg",
+        "path": "/it.it/word/9523/moltiplicare/0/"
+      },
+      {
+        "title": "dividere",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/206391.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/206391.jpg",
+        "path": "/it.it/word/9288/dividere/0/"
+      },
+      {
+        "title": "uguale",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/201165.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/201165.jpg",
+        "path": "/it.it/word/1619/uguale/0/"
+      },
+      {
+        "title": "maggiore",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/273385.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/273385.jpg",
+        "path": "/it.it/word/8038/maggiore/0/"
+      },
+      {
+        "title": "percentuale",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/444642.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/444642.jpg",
+        "path": "/it.it/word/5452/percentuale/0/"
+      },
+      {
+        "title": "radice quadrata",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/279822.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/279822.jpg",
+        "path": "/it.it/word/13647/radice-quadrata/0/"
+      },
+      {
+        "title": "infinito",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/223679.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/223679.jpg",
+        "path": "/it.it/word/6562/infinito/0/"
+      },
+      {
+        "title": "minore",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/444390.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/444390.jpg",
+        "path": "/it.it/word/3375/minore/0/"
+      }
+    ],
+    "createdAt": 1790171733308
+  }
+]

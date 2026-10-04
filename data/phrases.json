@@ -1,0 +1,147 @@
+[
+  {
+    "id": "6d6dc07a-d73c-4665-b340-8ef5d33325a8",
+    "name": "moto",
+    "words": [
+      {
+        "title": "movimento lineare",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/464170.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/464170.jpg",
+        "path": "/it.it/word/13475/movimento-lineare/0/"
+      },
+      {
+        "title": "uniforme",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/507123.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/507123.jpg",
+        "path": "/it.it/word/9107/uniforme/0/"
+      }
+    ],
+    "createdAt": 1790167152550
+  },
+  {
+    "id": "3365eb7b-7fbb-4b50-ae01-7685e3e248ae",
+    "name": "Velocità costante",
+    "words": [
+      {
+        "title": "velocità",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/178473.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/178473.jpg",
+        "path": "/it.it/word/5599/velocita/0/"
+      },
+      {
+        "title": "costante",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/670280.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/670280.jpg",
+        "path": "/it.it/word/13285/costante/0/"
+      }
+    ],
+    "createdAt": 1790167226223,
+    "tags": [
+      "fisica",
+      "cinematica"
+    ]
+  },
+  {
+    "id": "33e113bd-92b8-43a2-8b12-88aaca674b5d",
+    "name": "spazi uguali in tempi uguali",
+    "words": [
+      {
+        "title": "spazio",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/177495.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/177495.jpg",
+        "path": "/it.it/word/1594/spazio/0/"
+      },
+      {
+        "title": "uguale",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/201165.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/201165.jpg",
+        "path": "/it.it/word/1619/uguale/0/"
+      },
+      {
+        "title": "in",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/223664.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/223664.jpg",
+        "path": "/it.it/word/6546/in/0/"
+      },
+      {
+        "title": "tempo",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/177764.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/177764.jpg",
+        "path": "/it.it/word/454/tempo/0/"
+      },
+      {
+        "title": "uguale",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/201165.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/201165.jpg",
+        "path": "/it.it/word/1619/uguale/0/"
+      }
+    ],
+    "createdAt": 1790168231250,
+    "tags": [
+      "fisica",
+      "cinematica"
+    ]
+  },
+  {
+    "id": "01fc4229-e3be-4b81-a476-b0fb18527ee5",
+    "name": "Formula",
+    "tags": [
+      "matematica",
+      "fisica"
+    ],
+    "words": [
+      {
+        "title": "formula",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/461701.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/461701.jpg",
+        "path": "/it.it/word/8990/formula/0/"
+      }
+    ],
+    "createdAt": 1790617899406
+  },
+  {
+    "id": "ae9806ba-247e-4ebe-bf85-2fcfbc68c83a",
+    "name": "La scorsa settimana",
+    "tags": [
+      "conversazione"
+    ],
+    "words": [
+      {
+        "title": "la scorsa settimana",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/192387.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/192387.jpg",
+        "path": "/it.it/word/1741/la-scorsa-settimana/0/"
+      },
+      {
+        "title": "vedere",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/177756.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/177756.jpg",
+        "path": "/it.it/word/1707/vedere/0/"
+      }
+    ],
+    "createdAt": 1790619910490
+  },
+  {
+    "id": "e1e2fa6e-b855-453c-9eb9-ae189766cc42",
+    "name": "Posizione iniziale",
+    "tags": [
+      "cinematica",
+      "fisica"
+    ],
+    "words": [
+      {
+        "title": "posizione",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/272982.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/272982.jpg",
+        "path": "/it.it/word/15958/posizione/0/"
+      },
+      {
+        "title": "iniziale",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/465930.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/465930.jpg",
+        "path": "/it.it/word/4622/iniziale/0/"
+      }
+    ],
+    "createdAt": 1790620676014
+  }
+]
