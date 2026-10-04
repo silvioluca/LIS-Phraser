@@ -135,8 +135,58 @@
         "videoUrl": "https://media.spreadthesign.com/video/mp4/17/444390.mp4",
         "poster": "https://media.spreadthesign.com/video/jpg/17/444390.jpg",
         "path": "/it.it/word/3375/minore/0/"
+      },
+      {
+        "title": "diverso",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/291807.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/291807.jpg",
+        "path": "/it.it/word/22251/diverso/0/"
       }
     ],
     "createdAt": 1790171733308
+  },
+  {
+    "id": "b3f20606-ec5e-440a-a986-48c2ccf636ad",
+    "name": "Saluti",
+    "words": [
+      {
+        "title": "Ciao!",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/664596.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/664596.jpg",
+        "path": "/it.it/word/1774/ciao/0/"
+      },
+      {
+        "title": "ciao ciao",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/463226.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/463226.jpg",
+        "path": "/it.it/word/10855/ciao-ciao/0/"
+      },
+      {
+        "title": "Buon fine settimana!",
+        "videoUrl": "https://media.spreadthesign.com/video/mp4/17/633751.mp4",
+        "poster": "https://media.spreadthesign.com/video/jpg/17/633751.jpg",
+        "path": "/it.it/word/47233/buon-fine-settimana/0/"
+      },
+      {
+        "title": "buon giorno",
+        "videoUrl": "https://www.sgb-fss.ch/signsuisse/fileadmin/signsuisse_ressources/videos/009E13FE-D395-A8F0-80022F5B0C0E886A.mp4",
+        "poster": null,
+        "path": "/signsuisse/it/lexikon/122995/buon-giorno"
+      },
+      {
+        "title": "buonasera",
+        "videoUrl": "https://www.sgb-fss.ch/signsuisse/fileadmin/signsuisse_ressources/videos/B892FB4F-B004-AE65-926C78E053865F47.mp4",
+        "poster": null,
+        "path": "/signsuisse/it/lexikon/122679/buonasera"
+      },
+      {
+        "title": "arrivederci",
+        "videoUrl": "https://www.sgb-fss.ch/signsuisse/fileadmin/signsuisse_ressources/videos/0EC19C86-D6CF-3CEC-36A7F3C160EA3337.mp4",
+        "poster": null,
+        "path": "/signsuisse/it/lexikon/121859/arrivederci"
+      }
+    ],
+    "phrases": [],
+    "createdAt": 1791109567416
   }
 ]

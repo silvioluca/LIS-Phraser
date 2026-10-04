@@ -26,7 +26,7 @@ function writeAll(categories) {
 }
 
 function list() {
-  return readAll();
+  return readAll().map(normalize);
 }
 
 function create(name) {
@@ -36,10 +36,16 @@ function create(name) {
     id: crypto.randomUUID(),
     name: name.trim(),
     words: [],
+    phrases: [],
     createdAt: Date.now(),
   };
   categories.push(category);
   writeAll(categories);
+  return category;
+}
+
+function normalize(category) {
+  if (!category.phrases) category.phrases = [];
   return category;
 }
 
@@ -55,6 +61,7 @@ function addWord(id, word) {
   const categories = readAll();
   const category = categories.find((c) => c.id === id);
   if (!category) return null;
+  normalize(category);
 
   const already = category.words.some((w) => w.path === word.path);
   if (!already) {
@@ -73,9 +80,41 @@ function removeWord(id, wordPath) {
   const categories = readAll();
   const category = categories.find((c) => c.id === id);
   if (!category) return null;
+  normalize(category);
   category.words = category.words.filter((w) => w.path !== wordPath);
   writeAll(categories);
   return category;
 }
 
-module.exports = { list, create, remove, addWord, removeWord };
+function addPhrase(id, phrase) {
+  if (!phrase || !phrase.id || !Array.isArray(phrase.words) || phrase.words.length === 0) {
+    throw new Error('Frase non valida');
+  }
+  const categories = readAll();
+  const category = categories.find((c) => c.id === id);
+  if (!category) return null;
+  normalize(category);
+
+  const already = category.phrases.some((p) => p.phraseId === phrase.id);
+  if (!already) {
+    category.phrases.push({
+      phraseId: phrase.id,
+      name: phrase.name,
+      words: phrase.words,
+    });
+    writeAll(categories);
+  }
+  return category;
+}
+
+function removePhrase(id, phraseId) {
+  const categories = readAll();
+  const category = categories.find((c) => c.id === id);
+  if (!category) return null;
+  normalize(category);
+  category.phrases = category.phrases.filter((p) => p.phraseId !== phraseId);
+  writeAll(categories);
+  return category;
+}
+
+module.exports = { list, create, remove, addWord, removeWord, addPhrase, removePhrase };

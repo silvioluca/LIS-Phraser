@@ -99,6 +99,25 @@ app.delete('/api/categories/:id/words', (req, res) => {
   res.json(category);
 });
 
+app.post('/api/categories/:id/phrases', (req, res) => {
+  try {
+    const { phraseId } = req.body || {};
+    const phrase = phrasesStore.list().find((p) => p.id === phraseId);
+    if (!phrase) return res.status(404).json({ error: 'Frase non trovata' });
+    const category = categoriesStore.addPhrase(req.params.id, phrase);
+    if (!category) return res.status(404).json({ error: 'Categoria non trovata' });
+    res.status(201).json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/categories/:id/phrases/:phraseId', (req, res) => {
+  const category = categoriesStore.removePhrase(req.params.id, req.params.phraseId);
+  if (!category) return res.status(404).json({ error: 'Categoria non trovata' });
+  res.json(category);
+});
+
 app.listen(PORT, () => {
   console.log(`LIS Phraser in ascolto su http://localhost:${PORT}`);
 });

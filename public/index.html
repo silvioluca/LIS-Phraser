@@ -18,28 +18,31 @@
 
   <main>
     <section id="tab-create" class="tab-panel active">
-      <div class="search-box">
-        <input id="search-input" type="text" placeholder="Cerca una parola (es. ciao)" autocomplete="off">
-        <div id="search-results" class="search-results"></div>
+      <div class="create-stage is-empty">
+        <div class="search-box search-box-main">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-input" type="text" placeholder="Cerca una parola (es. ciao)" autocomplete="off">
+          <div id="search-results" class="search-results"></div>
+        </div>
+
+        <div class="phrase-builder">
+          <h2>Frase in costruzione</h2>
+
+          <div class="phrase-fields">
+            <input id="phrase-name" type="text" placeholder="Nome frase (es. Buongiorno amico)">
+            <input id="phrase-tags" type="text" placeholder="Tag, separati da virgola (opzionale)">
+          </div>
+
+          <div id="phrase-words" class="phrase-words">
+            <p class="empty-hint">Cerca una parola sopra e aggiungila alla frase.</p>
+          </div>
+
+          <div class="phrase-actions">
+            <button id="play-sequence" class="icon-btn icon-btn-lg" title="Riproduci frase" disabled>▶</button>
+            <button id="save-phrase" class="btn-primary" disabled>Salva frase</button>
+          </div>
+        </div>
       </div>
-
-      <div class="phrase-builder">
-        <h2>Frase in costruzione</h2>
-        <div id="phrase-words" class="phrase-words">
-          <p class="empty-hint">Cerca una parola sopra e aggiungila alla frase.</p>
-        </div>
-
-        <div class="phrase-fields">
-          <input id="phrase-name" type="text" placeholder="Nome frase (es. Buongiorno amico)">
-          <input id="phrase-tags" type="text" placeholder="Tag, separati da virgola (opzionale)">
-        </div>
-
-        <div class="phrase-actions">
-          <button id="play-sequence" class="icon-btn icon-btn-lg" title="Riproduci frase" disabled>▶</button>
-          <button id="save-phrase" class="btn-primary" disabled>Salva frase</button>
-        </div>
-      </div>
-
     </section>
 
     <section id="tab-saved" class="tab-panel">
@@ -49,7 +52,7 @@
 
     <section id="tab-categories" class="tab-panel">
       <h2>Categorie</h2>
-      <p class="section-hint">Raccolte di segni per argomento. Tocca un segno per aggiungerlo alla frase in costruzione.</p>
+      <p class="section-hint">Raccolte di segni e frasi per argomento. Clicca un'intestazione per aprirla.</p>
 
       <div class="new-category-box">
         <input id="new-category-name" type="text" placeholder="Nuova categoria (es. Colori)">
@@ -75,6 +78,16 @@
         <span>Velocità</span>
         <input id="speed-range" type="range" min="0.5" max="2" step="0.05" value="1">
         <span id="speed-value">1.00x</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="dialog-modal" class="dialog-modal hidden">
+    <div class="dialog-modal-content">
+      <p id="dialog-message"></p>
+      <div class="dialog-actions">
+        <button id="dialog-cancel" class="btn-secondary">Annulla</button>
+        <button id="dialog-ok" class="btn-primary">OK</button>
       </div>
     </div>
   </div>

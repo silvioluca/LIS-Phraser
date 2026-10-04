@@ -7,6 +7,45 @@ const ICONS = {
   trash: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
 };
 
+// ---------- Dialog (sostituisce alert/confirm) ----------
+const dialogModal = document.getElementById('dialog-modal');
+const dialogMessage = document.getElementById('dialog-message');
+const dialogOkBtn = document.getElementById('dialog-ok');
+const dialogCancelBtn = document.getElementById('dialog-cancel');
+
+function showMessage(message) {
+  return new Promise((resolve) => {
+    dialogMessage.textContent = message;
+    dialogCancelBtn.classList.add('hidden-btn');
+    dialogOkBtn.textContent = 'OK';
+    dialogModal.classList.remove('hidden');
+    const onOk = () => {
+      dialogModal.classList.add('hidden');
+      dialogOkBtn.removeEventListener('click', onOk);
+      resolve();
+    };
+    dialogOkBtn.addEventListener('click', onOk);
+  });
+}
+
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    dialogMessage.textContent = message;
+    dialogCancelBtn.classList.remove('hidden-btn');
+    dialogOkBtn.textContent = 'Conferma';
+    dialogModal.classList.remove('hidden');
+    const cleanup = () => {
+      dialogModal.classList.add('hidden');
+      dialogOkBtn.removeEventListener('click', onOk);
+      dialogCancelBtn.removeEventListener('click', onCancel);
+    };
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    dialogOkBtn.addEventListener('click', onOk);
+    dialogCancelBtn.addEventListener('click', onCancel);
+  });
+}
+
 // ---------- Tabs ----------
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -63,7 +102,10 @@ function renderSearchResults(results) {
     item.className = 'search-result-item';
     item.innerHTML = `
       <span class="word-title">${escapeHtml(r.title)}</span>
-      <span class="word-category">${escapeHtml(r.category || '')}</span>
+      <span class="word-meta">
+        <span class="word-category">${escapeHtml(r.category || '')}</span>
+        <span class="word-source word-source-${escapeHtml(r.source || '')}">${escapeHtml(r.source || '')}</span>
+      </span>
     `;
     item.addEventListener('click', () => addWordFromSearch(r));
     searchResultsEl.appendChild(item);
@@ -77,15 +119,17 @@ async function addWordFromSearch(result) {
     const res = await fetch(`/api/sign?path=${encodeURIComponent(result.path)}`);
     const sign = await res.json();
     if (!res.ok) throw new Error(sign.error || 'Errore recupero segno');
-    state.phraseWords.push({
+    const word = {
       title: sign.title || result.title,
       videoUrl: sign.videoUrl,
       poster: sign.poster,
       path: result.path,
-    });
+    };
+    state.phraseWords.push(word);
     renderPhraseWords();
+    openPlayer([word]);
   } catch (err) {
-    alert(`Impossibile aggiungere la parola: ${err.message}`);
+    showMessage(`Impossibile aggiungere la parola: ${err.message}`);
   }
 }
 
@@ -95,8 +139,22 @@ const playSequenceBtn = document.getElementById('play-sequence');
 const savePhraseBtn = document.getElementById('save-phrase');
 const phraseNameInput = document.getElementById('phrase-name');
 const phraseTagsInput = document.getElementById('phrase-tags');
+const createStageEl = document.querySelector('.create-stage');
+const phraseBuilderEl = document.querySelector('.phrase-builder');
+
+function updateCreateStage() {
+  const isEmpty = state.phraseWords.length === 0;
+  if (isEmpty) {
+    createStageEl.classList.add('is-empty');
+    phraseBuilderEl.classList.remove('visible');
+  } else {
+    createStageEl.classList.remove('is-empty');
+    requestAnimationFrame(() => requestAnimationFrame(() => phraseBuilderEl.classList.add('visible')));
+  }
+}
 
 function renderPhraseWords() {
+  updateCreateStage();
   if (state.phraseWords.length === 0) {
     phraseWordsEl.innerHTML = '<p class="empty-hint">Cerca una parola sopra e aggiungila alla frase.</p>';
   } else {
@@ -137,13 +195,11 @@ let playerIndex = 0;
 let playerOnWordChange = null;
 
 function loadWordAt(i) {
-  if (i < 0 || i >= playerWords.length) {
-    playerLabel.textContent = 'Fine frase';
-    if (playerOnWordChange) playerOnWordChange(-1);
-    return;
-  }
+  if (i < 0 || i >= playerWords.length) return;
   playerIndex = i;
   const w = playerWords[i];
+  const isLast = i === playerWords.length - 1;
+  sequencePlayer.loop = isLast;
   sequencePlayer.src = w.videoUrl;
   sequencePlayer.poster = w.poster || '';
   sequencePlayer.playbackRate = currentSpeed;
@@ -197,7 +253,7 @@ playSequenceBtn.addEventListener('click', () => openPlayer(state.phraseWords));
 savePhraseBtn.addEventListener('click', async () => {
   const name = phraseNameInput.value.trim();
   if (!name) {
-    alert('Dai un nome alla frase prima di salvarla.');
+    showMessage('Dai un nome alla frase prima di salvarla.');
     return;
   }
   const tags = phraseTagsInput.value.split(',').map((t) => t.trim()).filter(Boolean);
@@ -213,9 +269,9 @@ savePhraseBtn.addEventListener('click', async () => {
     phraseNameInput.value = '';
     phraseTagsInput.value = '';
     renderPhraseWords();
-    alert('Frase salvata.');
+    showMessage('Frase salvata.');
   } catch (err) {
-    alert(`Impossibile salvare: ${err.message}`);
+    showMessage(`Impossibile salvare: ${err.message}`);
   }
 });
 
@@ -296,7 +352,7 @@ function renderSavedPhrases(phrases) {
         e.stopPropagation();
         const name = header.querySelector('.edit-name').value.trim();
         const tags = header.querySelector('.edit-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
-        if (!name) { alert('Il nome non può essere vuoto.'); return; }
+        if (!name) { showMessage('Il nome non può essere vuoto.'); return; }
         try {
           const res = await fetch(`/api/phrases/${p.id}`, {
             method: 'PATCH',
@@ -308,7 +364,7 @@ function renderSavedPhrases(phrases) {
           editingIds.delete(p.id);
           loadSavedPhrases();
         } catch (err) {
-          alert(`Impossibile salvare le modifiche: ${err.message}`);
+          showMessage(`Impossibile salvare le modifiche: ${err.message}`);
         }
       });
       header.querySelector('.btn-cancel-edit').addEventListener('click', (e) => {
@@ -346,7 +402,7 @@ function renderSavedPhrases(phrases) {
       });
       header.querySelector('.btn-delete').addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm(`Eliminare la frase "${p.name}"?`)) return;
+        if (!await showConfirm(`Eliminare la frase "${p.name}"?`)) return;
         await fetch(`/api/phrases/${p.id}`, { method: 'DELETE' });
         loadSavedPhrases();
       });
@@ -378,6 +434,9 @@ function renderSavedPhrases(phrases) {
 const categoriesListEl = document.getElementById('categories-list');
 const newCategoryNameInput = document.getElementById('new-category-name');
 const addCategoryBtn = document.getElementById('add-category-btn');
+const openCategoryIds = new Set();
+
+const CHEVRON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
 
 addCategoryBtn.addEventListener('click', async () => {
   const name = newCategoryNameInput.value.trim();
@@ -391,24 +450,29 @@ addCategoryBtn.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Errore creazione categoria');
     newCategoryNameInput.value = '';
+    openCategoryIds.add(data.id);
     loadCategories();
   } catch (err) {
-    alert(`Impossibile creare la categoria: ${err.message}`);
+    showMessage(`Impossibile creare la categoria: ${err.message}`);
   }
 });
 
 async function loadCategories() {
   categoriesListEl.innerHTML = '<p class="category-empty">Caricamento...</p>';
   try {
-    const res = await fetch('/api/categories');
-    const categories = await res.json();
-    renderCategories(categories);
+    const [catsRes, phrasesRes] = await Promise.all([
+      fetch('/api/categories'),
+      fetch('/api/phrases'),
+    ]);
+    const categories = await catsRes.json();
+    const savedPhrases = await phrasesRes.json();
+    renderCategories(categories, savedPhrases);
   } catch (err) {
     categoriesListEl.innerHTML = `<p class="category-empty">Errore: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-function renderCategories(categories) {
+function renderCategories(categories, savedPhrases) {
   if (categories.length === 0) {
     categoriesListEl.innerHTML = '<p class="category-empty">Nessuna categoria. Creane una sopra.</p>';
     return;
@@ -417,20 +481,42 @@ function renderCategories(categories) {
   categories.forEach((cat) => {
     const card = document.createElement('div');
     card.className = 'category-card';
+    if (openCategoryIds.has(cat.id)) card.classList.add('open');
+
+    const totalCount = cat.words.length + (cat.phrases || []).length;
     card.innerHTML = `
       <div class="category-header">
-        <h3>${escapeHtml(cat.name)}</h3>
+        <div class="category-header-left">
+          <span class="category-chevron">${CHEVRON_ICON}</span>
+          <h3>${escapeHtml(cat.name)}<span class="category-count">${totalCount} elementi</span></h3>
+        </div>
         <button class="icon-btn btn-danger-icon delete-category" title="Elimina categoria">${ICONS.trash}</button>
       </div>
-      <div class="category-search-box">
-        <input type="text" class="category-search-input" placeholder="Cerca e aggiungi un segno...">
-        <div class="category-search-results search-results"></div>
+      <div class="category-body">
+        <div class="category-search-box">
+          <input type="text" class="category-search-input" placeholder="Cerca e aggiungi un segno...">
+          <div class="category-search-results search-results"></div>
+        </div>
+        <div class="category-grid"></div>
+
+        <div class="category-section-label">Frasi salvate</div>
+        <div class="add-phrase-row">
+          <select class="add-phrase-select"></select>
+          <button class="btn-secondary add-phrase-btn">Aggiungi</button>
+        </div>
+        <div class="category-phrases"></div>
       </div>
-      <div class="category-grid"></div>
     `;
 
-    card.querySelector('.delete-category').addEventListener('click', async () => {
-      if (!confirm(`Eliminare la categoria "${cat.name}"?`)) return;
+    card.querySelector('.category-header').addEventListener('click', () => {
+      card.classList.toggle('open');
+      if (card.classList.contains('open')) openCategoryIds.add(cat.id);
+      else openCategoryIds.delete(cat.id);
+    });
+
+    card.querySelector('.delete-category').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!await showConfirm(`Eliminare la categoria "${cat.name}"?`)) return;
       await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' });
       loadCategories();
     });
@@ -438,8 +524,42 @@ function renderCategories(categories) {
     const grid = card.querySelector('.category-grid');
     renderCategoryGrid(grid, cat);
 
+    const phrasesContainer = card.querySelector('.category-phrases');
+    renderCategoryPhrases(phrasesContainer, cat);
+
+    const select = card.querySelector('.add-phrase-select');
+    const addPhraseBtn = card.querySelector('.add-phrase-btn');
+    const alreadyIds = new Set((cat.phrases || []).map((p) => p.phraseId));
+    const available = savedPhrases.filter((p) => !alreadyIds.has(p.id));
+    if (available.length === 0) {
+      select.innerHTML = '<option value="">Nessuna frase disponibile</option>';
+      select.disabled = true;
+      addPhraseBtn.disabled = true;
+    } else {
+      select.innerHTML = available.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+    }
+    addPhraseBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const phraseId = select.value;
+      if (!phraseId) return;
+      try {
+        const res = await fetch(`/api/categories/${cat.id}/phrases`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phraseId }),
+        });
+        const updatedCat = await res.json();
+        if (!res.ok) throw new Error(updatedCat.error || 'Errore aggiunta frase');
+        openCategoryIds.add(cat.id);
+        loadCategories();
+      } catch (err) {
+        showMessage(`Impossibile aggiungere la frase: ${err.message}`);
+      }
+    });
+
     const searchInputEl = card.querySelector('.category-search-input');
     const searchResultsEl2 = card.querySelector('.category-search-results');
+    searchInputEl.addEventListener('click', (e) => e.stopPropagation());
     let localTimer = null;
     searchInputEl.addEventListener('input', () => {
       clearTimeout(localTimer);
@@ -466,7 +586,10 @@ function renderCategories(categories) {
             item.className = 'search-result-item';
             item.innerHTML = `
               <span class="word-title">${escapeHtml(r.title)}</span>
-              <span class="word-category">${escapeHtml(r.category || '')}</span>
+              <span class="word-meta">
+                <span class="word-category">${escapeHtml(r.category || '')}</span>
+                <span class="word-source word-source-${escapeHtml(r.source || '')}">${escapeHtml(r.source || '')}</span>
+              </span>
             `;
             item.addEventListener('click', async () => {
               searchResultsEl2.classList.remove('open');
@@ -489,7 +612,7 @@ function renderCategories(categories) {
                 if (!addRes.ok) throw new Error(updatedCat.error || 'Errore aggiunta segno');
                 renderCategoryGrid(grid, updatedCat);
               } catch (err) {
-                alert(`Impossibile aggiungere il segno: ${err.message}`);
+                showMessage(`Impossibile aggiungere il segno: ${err.message}`);
               }
             });
             searchResultsEl2.appendChild(item);
@@ -536,6 +659,48 @@ function renderCategoryGrid(gridEl, category) {
       openPlayer([w]);
     });
     gridEl.appendChild(square);
+  });
+}
+
+function renderCategoryPhrases(container, category) {
+  const phrases = category.phrases || [];
+  if (phrases.length === 0) {
+    container.innerHTML = '<p class="category-empty">Nessuna frase in questa categoria.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  phrases.forEach((ph) => {
+    const card = document.createElement('div');
+    card.className = 'category-phrase-card';
+    card.innerHTML = `
+      <div class="category-phrase-header">
+        <span class="category-phrase-name">${escapeHtml(ph.name)}</span>
+        <button class="icon-btn btn-danger-icon remove-phrase" title="Rimuovi dalla categoria">${ICONS.trash}</button>
+      </div>
+      <div class="category-phrase-thumbs"></div>
+    `;
+
+    const thumbs = card.querySelector('.category-phrase-thumbs');
+    ph.words.forEach((w) => {
+      const mini = document.createElement('div');
+      mini.className = 'mini-card';
+      mini.innerHTML = `
+        <video class="mini-video" src="${w.videoUrl}" poster="${w.poster || ''}" muted playsinline preload="none"></video>
+        <span class="mini-label">${escapeHtml(w.title)}</span>
+      `;
+      thumbs.appendChild(mini);
+    });
+
+    card.querySelector('.remove-phrase').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const res = await fetch(`/api/categories/${category.id}/phrases/${ph.phraseId}`, { method: 'DELETE' });
+      const updatedCat = await res.json();
+      if (res.ok) renderCategoryPhrases(container, updatedCat);
+    });
+    card.addEventListener('click', () => playMiniThumbs(thumbs));
+    card.addEventListener('dblclick', () => openPlayer(ph.words));
+
+    container.appendChild(card);
   });
 }
 
