@@ -1,3 +1,15 @@
+import { auth, googleProvider, SCRAPER_API_BASE } from './firebase-init.js';
+import {
+  signInWithPopup, signOut, onAuthStateChanged,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  checkIsEditor,
+  listPhrases, createPhrase, updatePhrase, deletePhrase,
+  listCategories, createCategory, deleteCategory, setCategoryCover,
+  addWordToCategory, removeWordFromCategory,
+  uploadRecordedVideo,
+} from './data-store.js';
+
 const state = {
   phraseWords: [], // { title, videoUrl, poster, path }
 };
@@ -6,6 +18,62 @@ const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
 };
+
+// ---------- Navigazione e accesso ----------
+const pageHome = document.getElementById('page-home');
+const pageApp = document.getElementById('page-app');
+const loginBtn = document.getElementById('login-btn');
+const userBox = document.getElementById('user-box');
+const userEmailEl = document.getElementById('user-email');
+const signoutBtn = document.getElementById('signout-btn');
+
+let isEditor = false;
+let currentView = 'home';
+
+onAuthStateChanged(auth, async (user) => {
+  loginBtn.classList.toggle('hidden', Boolean(user));
+  userBox.classList.toggle('hidden', !user);
+  userEmailEl.textContent = user ? user.email : '';
+  isEditor = user ? await checkIsEditor(user.email) : false;
+  document.body.classList.toggle('is-editor', isEditor);
+  if (!user && currentView === 'saved') navigate('home');
+});
+
+async function ensureSignedIn() {
+  if (auth.currentUser) return true;
+  try {
+    await signInWithPopup(auth, googleProvider);
+    return true;
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+      showMessage(`Accesso non riuscito: ${err.message}`);
+    }
+    return false;
+  }
+}
+
+async function navigate(view) {
+  if (view === 'saved' && !(await ensureSignedIn())) return;
+  currentView = view;
+  document.querySelectorAll('.nav-link').forEach((l) => l.classList.toggle('active', l.dataset.nav === view));
+  window.scrollTo(0, 0);
+  if (view === 'home') {
+    pageApp.classList.add('hidden');
+    pageHome.classList.remove('hidden');
+    return;
+  }
+  pageHome.classList.add('hidden');
+  pageApp.classList.remove('hidden');
+  document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${view}`));
+  if (view === 'saved') loadSavedPhrases();
+  if (view === 'glossario') showGlossarioGrid();
+}
+
+document.querySelectorAll('[data-nav]').forEach((el) => {
+  el.addEventListener('click', () => navigate(el.dataset.nav));
+});
+loginBtn.addEventListener('click', ensureSignedIn);
+signoutBtn.addEventListener('click', () => signOut(auth));
 
 // ---------- Dialog (sostituisce alert/confirm) ----------
 const dialogModal = document.getElementById('dialog-modal');
@@ -46,18 +114,6 @@ function showConfirm(message) {
   });
 }
 
-// ---------- Tabs ----------
-document.querySelectorAll('.tab-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-    if (btn.dataset.tab === 'saved') loadSavedPhrases();
-    if (btn.dataset.tab === 'categories') loadCategories();
-  });
-});
-
 // ---------- Search ----------
 const searchInput = document.getElementById('search-input');
 const searchResultsEl = document.getElementById('search-results');
@@ -82,7 +138,7 @@ async function runSearch(q) {
   searchResultsEl.innerHTML = '<div class="search-status">Ricerca in corso...</div>';
   searchResultsEl.classList.add('open');
   try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const res = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(q)}`);
     const results = await res.json();
     if (!res.ok) throw new Error(results.error || 'Errore ricerca');
     renderSearchResults(results);
@@ -116,7 +172,7 @@ async function addWordFromSearch(result) {
   searchResultsEl.classList.remove('open');
   searchInput.value = '';
   try {
-    const res = await fetch(`/api/sign?path=${encodeURIComponent(result.path)}`);
+    const res = await fetch(`${SCRAPER_API_BASE}/api/sign?path=${encodeURIComponent(result.path)}`);
     const sign = await res.json();
     if (!res.ok) throw new Error(sign.error || 'Errore recupero segno');
     const word = {
@@ -124,6 +180,7 @@ async function addWordFromSearch(result) {
       videoUrl: sign.videoUrl,
       poster: sign.poster,
       path: result.path,
+      source: result.source || sign.source || null,
     };
     state.phraseWords.push(word);
     renderPhraseWords();
@@ -164,13 +221,16 @@ function renderPhraseWords() {
       card.className = 'word-card';
       card.innerHTML = `
         <button class="remove-word" title="Rimuovi">✕</button>
-        <video src="${w.videoUrl}" poster="${w.poster || ''}" muted loop autoplay playsinline></video>
+        <video src="${w.videoUrl}" poster="${w.poster || ''}" muted loop playsinline preload="metadata"></video>
         <div class="word-label">${escapeHtml(w.title)}</div>
       `;
-      card.querySelector('.remove-word').addEventListener('click', () => {
+      card.querySelector('.remove-word').addEventListener('click', (e) => {
+        e.stopPropagation();
         state.phraseWords.splice(idx, 1);
         renderPhraseWords();
       });
+      attachHoverPreview(card, card.querySelector('video'));
+      card.addEventListener('click', () => openPlayer([w]));
       phraseWordsEl.appendChild(card);
     });
   }
@@ -249,6 +309,117 @@ playerModal.addEventListener('click', (e) => {
 
 playSequenceBtn.addEventListener('click', () => openPlayer(state.phraseWords));
 
+// ---------- Registrazione segni (usata dagli editor nel glossario) ----------
+const recordModal = document.getElementById('record-modal');
+const recordVideo = document.getElementById('record-preview');
+const recordTitleInput = document.getElementById('record-title');
+const recordCloseBtn = document.getElementById('record-close');
+const recordStartBtn = document.getElementById('record-start-btn');
+const recordStopBtn = document.getElementById('record-stop-btn');
+const recordRetryBtn = document.getElementById('record-retry-btn');
+const recordSaveBtn = document.getElementById('record-save-btn');
+const recordStatus = document.getElementById('record-status');
+
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordedBlob = null;
+let recordOnSave = null;
+
+async function openRecordModal(onSave) {
+  recordOnSave = onSave;
+  recordModal.classList.remove('hidden');
+  recordTitleInput.value = '';
+  recordedBlob = null;
+  recordStatus.textContent = '';
+  setRecordButtons('idle');
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    recordVideo.srcObject = mediaStream;
+    recordVideo.muted = true;
+    recordVideo.loop = false;
+    await recordVideo.play();
+  } catch (err) {
+    recordStatus.textContent = `Impossibile accedere alla webcam: ${err.message}`;
+  }
+}
+
+function stopStream() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((t) => t.stop());
+    mediaStream = null;
+  }
+}
+
+function closeRecordModal() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  stopStream();
+  recordVideo.srcObject = null;
+  recordVideo.removeAttribute('src');
+  recordModal.classList.add('hidden');
+}
+
+function setRecordButtons(mode) {
+  // mode: 'idle' | 'recording' | 'preview' | 'uploading'
+  recordStartBtn.classList.toggle('hidden', mode !== 'idle');
+  recordStopBtn.classList.toggle('hidden', mode !== 'recording');
+  recordRetryBtn.classList.toggle('hidden', mode !== 'preview');
+  recordSaveBtn.disabled = mode !== 'preview';
+  recordSaveBtn.textContent = mode === 'uploading' ? 'Caricamento...' : 'Usa questo segno';
+}
+
+recordCloseBtn.addEventListener('click', closeRecordModal);
+recordModal.addEventListener('click', (e) => { if (e.target === recordModal) closeRecordModal(); });
+
+recordStartBtn.addEventListener('click', () => {
+  if (!mediaStream) return;
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm' });
+  mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+    stopStream();
+    recordVideo.srcObject = null;
+    recordVideo.src = URL.createObjectURL(recordedBlob);
+    recordVideo.muted = true;
+    recordVideo.loop = true;
+    recordVideo.play();
+    setRecordButtons('preview');
+  };
+  mediaRecorder.start();
+  setRecordButtons('recording');
+  recordStatus.textContent = 'Registrazione in corso...';
+});
+
+recordStopBtn.addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  recordStatus.textContent = '';
+});
+
+recordRetryBtn.addEventListener('click', () => {
+  recordVideo.removeAttribute('src');
+  recordedBlob = null;
+  openRecordModal(recordOnSave);
+});
+
+recordSaveBtn.addEventListener('click', async () => {
+  const title = recordTitleInput.value.trim();
+  if (!title) {
+    showMessage('Dai un nome al segno prima di usarlo.');
+    return;
+  }
+  if (!recordedBlob) return;
+  setRecordButtons('uploading');
+  try {
+    const { videoUrl, path } = await uploadRecordedVideo(recordedBlob);
+    await recordOnSave({ title, videoUrl, poster: null, path, source: 'custom' });
+    closeRecordModal();
+  } catch (err) {
+    setRecordButtons('preview');
+    showMessage(`Impossibile caricare il video: ${err.message}`);
+  }
+});
+
 // ---------- Save phrase ----------
 savePhraseBtn.addEventListener('click', async () => {
   const name = phraseNameInput.value.trim();
@@ -256,15 +427,10 @@ savePhraseBtn.addEventListener('click', async () => {
     showMessage('Dai un nome alla frase prima di salvarla.');
     return;
   }
+  if (!(await ensureSignedIn())) return;
   const tags = phraseTagsInput.value.split(',').map((t) => t.trim()).filter(Boolean);
   try {
-    const res = await fetch('/api/phrases', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, words: state.phraseWords, tags }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Errore salvataggio');
+    await createPhrase(auth.currentUser.email, name, state.phraseWords, tags);
     state.phraseWords = [];
     phraseNameInput.value = '';
     phraseTagsInput.value = '';
@@ -282,26 +448,38 @@ const editingIds = new Set();
 async function loadSavedPhrases() {
   savedListEl.innerHTML = '<p class="saved-empty">Caricamento...</p>';
   try {
-    const res = await fetch('/api/phrases');
-    const phrases = await res.json();
+    const phrases = await listPhrases(auth.currentUser.email);
     renderSavedPhrases(phrases);
   } catch (err) {
     savedListEl.innerHTML = `<p class="saved-empty">Errore: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-function playMiniThumbs(thumbsEl) {
-  const cards = Array.from(thumbsEl.querySelectorAll('.mini-card'));
-  cards.forEach((c) => {
+function attachHoverPreview(el, video) {
+  el.addEventListener('mouseenter', () => video.play().catch(() => {}));
+  el.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+}
+
+function stopMiniThumbs(thumbsEl) {
+  thumbsEl.playToken = (thumbsEl.playToken || 0) + 1;
+  thumbsEl.querySelectorAll('.mini-card').forEach((c) => {
     const v = c.querySelector('video');
     v.onended = null;
     v.pause();
     v.currentTime = 0;
     c.classList.remove('playing');
   });
+}
+
+function playMiniThumbs(thumbsEl) {
+  stopMiniThumbs(thumbsEl);
+  const token = thumbsEl.playToken;
+  const cards = Array.from(thumbsEl.querySelectorAll('.mini-card'));
 
   let idx = 0;
   function playNext() {
+    // Un mouseleave o una nuova anteprima invalidano la sequenza in corso.
+    if (thumbsEl.playToken !== token) return;
     cards.forEach((c) => c.classList.remove('playing'));
     if (idx >= cards.length) return;
     const card = cards[idx];
@@ -322,7 +500,7 @@ function playMiniThumbs(thumbsEl) {
 
 function renderSavedPhrases(phrases) {
   if (phrases.length === 0) {
-    savedListEl.innerHTML = '<p class="saved-empty">Nessuna frase salvata.</p>';
+    savedListEl.innerHTML = '<p class="saved-empty">Non hai ancora salvato frasi. Componine una nel Dizionario e premi "Salva frase".</p>';
     return;
   }
   savedListEl.innerHTML = '';
@@ -354,13 +532,7 @@ function renderSavedPhrases(phrases) {
         const tags = header.querySelector('.edit-tags').value.split(',').map((t) => t.trim()).filter(Boolean);
         if (!name) { showMessage('Il nome non può essere vuoto.'); return; }
         try {
-          const res = await fetch(`/api/phrases/${p.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, tags }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Errore modifica');
+          await updatePhrase(p.id, { name, tags });
           editingIds.delete(p.id);
           loadSavedPhrases();
         } catch (err) {
@@ -403,7 +575,7 @@ function renderSavedPhrases(phrases) {
       header.querySelector('.btn-delete').addEventListener('click', async (e) => {
         e.stopPropagation();
         if (!await showConfirm(`Eliminare la frase "${p.name}"?`)) return;
-        await fetch(`/api/phrases/${p.id}`, { method: 'DELETE' });
+        await deletePhrase(p.id);
         loadSavedPhrases();
       });
     }
@@ -421,7 +593,15 @@ function renderSavedPhrases(phrases) {
     });
 
     if (!isEditing) {
-      item.addEventListener('click', () => playMiniThumbs(thumbs));
+      item.addEventListener('mouseenter', () => playMiniThumbs(thumbs));
+      item.addEventListener('mouseleave', () => stopMiniThumbs(thumbs));
+      item.addEventListener('click', () => {
+        stopMiniThumbs(thumbs);
+        const cards = Array.from(thumbs.querySelectorAll('.mini-card'));
+        openPlayer(p.words, (activeIdx) => {
+          cards.forEach((c, i) => c.classList.toggle('playing', i === activeIdx));
+        });
+      });
     }
 
     item.appendChild(header);
@@ -430,284 +610,289 @@ function renderSavedPhrases(phrases) {
   });
 }
 
-// ---------- Categories ----------
-const categoriesListEl = document.getElementById('categories-list');
+// ---------- Glossario (lettura pubblica, modifica solo per gli editor) ----------
+const glossarioGridView = document.getElementById('glossario-grid-view');
+const glossarioDetailView = document.getElementById('glossario-detail-view');
+const subjectGridEl = document.getElementById('subject-grid');
 const newCategoryNameInput = document.getElementById('new-category-name');
 const addCategoryBtn = document.getElementById('add-category-btn');
-const openCategoryIds = new Set();
+const backToGlossarioBtn = document.getElementById('back-to-glossario');
+const detailCategoryNameEl = document.getElementById('detail-category-name');
+const deleteCategoryBtn = document.getElementById('delete-category-btn');
+const openAddwordBtn = document.getElementById('open-addword-btn');
+const detailGridEl = document.getElementById('detail-grid');
 
-const CHEVRON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+const STAR_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+deleteCategoryBtn.innerHTML = ICONS.trash;
+
+let currentCategory = null;
 
 addCategoryBtn.addEventListener('click', async () => {
   const name = newCategoryNameInput.value.trim();
   if (!name) return;
   try {
-    const res = await fetch('/api/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Errore creazione categoria');
+    await createCategory(name);
     newCategoryNameInput.value = '';
-    openCategoryIds.add(data.id);
-    loadCategories();
+    showGlossarioGrid();
   } catch (err) {
-    showMessage(`Impossibile creare la categoria: ${err.message}`);
+    showMessage(`Impossibile creare la materia: ${err.message}`);
   }
 });
 
-async function loadCategories() {
-  categoriesListEl.innerHTML = '<p class="category-empty">Caricamento...</p>';
+async function showGlossarioGrid() {
+  currentCategory = null;
+  glossarioDetailView.classList.add('hidden');
+  glossarioGridView.classList.remove('hidden');
+  subjectGridEl.innerHTML = '<p class="category-empty">Caricamento...</p>';
   try {
-    const [catsRes, phrasesRes] = await Promise.all([
-      fetch('/api/categories'),
-      fetch('/api/phrases'),
-    ]);
-    const categories = await catsRes.json();
-    const savedPhrases = await phrasesRes.json();
-    renderCategories(categories, savedPhrases);
+    renderSubjectGrid(await listCategories());
   } catch (err) {
-    categoriesListEl.innerHTML = `<p class="category-empty">Errore: ${escapeHtml(err.message)}</p>`;
+    subjectGridEl.innerHTML = `<p class="category-empty">Errore: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-function renderCategories(categories, savedPhrases) {
+function renderSubjectGrid(categories) {
   if (categories.length === 0) {
-    categoriesListEl.innerHTML = '<p class="category-empty">Nessuna categoria. Creane una sopra.</p>';
+    subjectGridEl.innerHTML = '<p class="category-empty">Nessuna materia presente.</p>';
     return;
   }
-  categoriesListEl.innerHTML = '';
+  subjectGridEl.innerHTML = '';
   categories.forEach((cat) => {
+    const coverWord = cat.cover || cat.words[0];
+    const totalCount = cat.words.length;
     const card = document.createElement('div');
-    card.className = 'category-card';
-    if (openCategoryIds.has(cat.id)) card.classList.add('open');
-
-    const totalCount = cat.words.length + (cat.phrases || []).length;
+    card.className = 'subject-card';
     card.innerHTML = `
-      <div class="category-header">
-        <div class="category-header-left">
-          <span class="category-chevron">${CHEVRON_ICON}</span>
-          <h3>${escapeHtml(cat.name)}<span class="category-count">${totalCount} elementi</span></h3>
-        </div>
-        <button class="icon-btn btn-danger-icon delete-category" title="Elimina categoria">${ICONS.trash}</button>
+      <div class="subject-video-wrap">
+        ${coverWord
+          ? `<video src="${coverWord.videoUrl}" poster="${coverWord.poster || ''}" muted loop playsinline preload="metadata"></video>`
+          : ''}
       </div>
-      <div class="category-body">
-        <div class="category-search-box">
-          <input type="text" class="category-search-input" placeholder="Cerca e aggiungi un segno...">
-          <div class="category-search-results search-results"></div>
-        </div>
-        <div class="category-grid"></div>
-
-        <div class="category-section-label">Frasi salvate</div>
-        <div class="add-phrase-row">
-          <select class="add-phrase-select"></select>
-          <button class="btn-secondary add-phrase-btn">Aggiungi</button>
-        </div>
-        <div class="category-phrases"></div>
+      <div class="subject-info">
+        <p class="subject-name">${escapeHtml(cat.name)}</p>
+        <p class="subject-count">${totalCount} ${totalCount === 1 ? 'segno' : 'segni'}</p>
       </div>
     `;
-
-    card.querySelector('.category-header').addEventListener('click', () => {
-      card.classList.toggle('open');
-      if (card.classList.contains('open')) openCategoryIds.add(cat.id);
-      else openCategoryIds.delete(cat.id);
-    });
-
-    card.querySelector('.delete-category').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!await showConfirm(`Eliminare la categoria "${cat.name}"?`)) return;
-      await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' });
-      loadCategories();
-    });
-
-    const grid = card.querySelector('.category-grid');
-    renderCategoryGrid(grid, cat);
-
-    const phrasesContainer = card.querySelector('.category-phrases');
-    renderCategoryPhrases(phrasesContainer, cat);
-
-    const select = card.querySelector('.add-phrase-select');
-    const addPhraseBtn = card.querySelector('.add-phrase-btn');
-    const alreadyIds = new Set((cat.phrases || []).map((p) => p.phraseId));
-    const available = savedPhrases.filter((p) => !alreadyIds.has(p.id));
-    if (available.length === 0) {
-      select.innerHTML = '<option value="">Nessuna frase disponibile</option>';
-      select.disabled = true;
-      addPhraseBtn.disabled = true;
-    } else {
-      select.innerHTML = available.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+    const video = card.querySelector('video');
+    if (video) {
+      card.addEventListener('mouseenter', () => video.play());
+      card.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
     }
-    addPhraseBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const phraseId = select.value;
-      if (!phraseId) return;
-      try {
-        const res = await fetch(`/api/categories/${cat.id}/phrases`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phraseId }),
-        });
-        const updatedCat = await res.json();
-        if (!res.ok) throw new Error(updatedCat.error || 'Errore aggiunta frase');
-        openCategoryIds.add(cat.id);
-        loadCategories();
-      } catch (err) {
-        showMessage(`Impossibile aggiungere la frase: ${err.message}`);
-      }
-    });
-
-    const searchInputEl = card.querySelector('.category-search-input');
-    const searchResultsEl2 = card.querySelector('.category-search-results');
-    searchInputEl.addEventListener('click', (e) => e.stopPropagation());
-    let localTimer = null;
-    searchInputEl.addEventListener('input', () => {
-      clearTimeout(localTimer);
-      const q = searchInputEl.value.trim();
-      if (!q) {
-        searchResultsEl2.classList.remove('open');
-        searchResultsEl2.innerHTML = '';
-        return;
-      }
-      localTimer = setTimeout(async () => {
-        searchResultsEl2.innerHTML = '<div class="search-status">Ricerca in corso...</div>';
-        searchResultsEl2.classList.add('open');
-        try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-          const results = await res.json();
-          if (!res.ok) throw new Error(results.error || 'Errore ricerca');
-          if (results.length === 0) {
-            searchResultsEl2.innerHTML = '<div class="search-status">Nessun risultato</div>';
-            return;
-          }
-          searchResultsEl2.innerHTML = '';
-          results.forEach((r) => {
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.innerHTML = `
-              <span class="word-title">${escapeHtml(r.title)}</span>
-              <span class="word-meta">
-                <span class="word-category">${escapeHtml(r.category || '')}</span>
-                <span class="word-source word-source-${escapeHtml(r.source || '')}">${escapeHtml(r.source || '')}</span>
-              </span>
-            `;
-            item.addEventListener('click', async () => {
-              searchResultsEl2.classList.remove('open');
-              searchInputEl.value = '';
-              try {
-                const signRes = await fetch(`/api/sign?path=${encodeURIComponent(r.path)}`);
-                const sign = await signRes.json();
-                if (!signRes.ok) throw new Error(sign.error || 'Errore recupero segno');
-                const addRes = await fetch(`/api/categories/${cat.id}/words`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    title: sign.title || r.title,
-                    videoUrl: sign.videoUrl,
-                    poster: sign.poster,
-                    path: r.path,
-                  }),
-                });
-                const updatedCat = await addRes.json();
-                if (!addRes.ok) throw new Error(updatedCat.error || 'Errore aggiunta segno');
-                renderCategoryGrid(grid, updatedCat);
-              } catch (err) {
-                showMessage(`Impossibile aggiungere il segno: ${err.message}`);
-              }
-            });
-            searchResultsEl2.appendChild(item);
-          });
-        } catch (err) {
-          searchResultsEl2.innerHTML = `<div class="search-status">Errore: ${escapeHtml(err.message)}</div>`;
-        }
-      }, 350);
-    });
-
-    categoriesListEl.appendChild(card);
+    card.addEventListener('click', () => openCategoryDetail(cat.id));
+    subjectGridEl.appendChild(card);
   });
 }
 
+async function openCategoryDetail(categoryId) {
+  glossarioGridView.classList.add('hidden');
+  glossarioDetailView.classList.remove('hidden');
+  detailCategoryNameEl.textContent = 'Caricamento...';
+  detailGridEl.innerHTML = '';
+  window.scrollTo(0, 0);
+  try {
+    const categories = await listCategories();
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) { showMessage('Materia non trovata.'); showGlossarioGrid(); return; }
+    currentCategory = category;
+    renderCategoryDetail(category);
+  } catch (err) {
+    showMessage(`Errore caricamento: ${err.message}`);
+  }
+}
+
+const detailCoverVideoEl = document.querySelector('#detail-cover .detail-cover-video');
+const detailCoverTitleEl = document.getElementById('detail-cover-title');
+const changeCoverBtn = document.getElementById('change-cover-btn');
+
+function renderCoverPreview(category) {
+  const cover = category.cover || category.words[0];
+  detailCoverVideoEl.innerHTML = cover
+    ? `<video src="${cover.videoUrl}" poster="${cover.poster || ''}" muted loop playsinline preload="metadata"></video>`
+    : '';
+  detailCoverTitleEl.textContent = category.cover
+    ? category.cover.title
+    : (cover ? `${cover.title} (primo segno, nessuna copertina scelta)` : 'Nessuna copertina');
+  const video = detailCoverVideoEl.querySelector('video');
+  if (video) attachHoverPreview(detailCoverVideoEl, video);
+}
+
+async function applyCover(word) {
+  currentCategory.cover = await setCategoryCover(currentCategory.id, word);
+  renderCategoryGrid(detailGridEl, currentCategory);
+  renderCoverPreview(currentCategory);
+}
+
+function renderCategoryDetail(category) {
+  detailCategoryNameEl.textContent = category.name;
+  renderCategoryGrid(detailGridEl, category);
+  renderCoverPreview(category);
+
+  deleteCategoryBtn.onclick = async () => {
+    if (!await showConfirm(`Eliminare la materia "${category.name}" e tutti i suoi segni?`)) return;
+    try {
+      await deleteCategory(category.id);
+      showGlossarioGrid();
+    } catch (err) {
+      showMessage(`Impossibile eliminare: ${err.message}`);
+    }
+  };
+}
+
+backToGlossarioBtn.addEventListener('click', showGlossarioGrid);
+
 function renderCategoryGrid(gridEl, category) {
-  if (!category.words || category.words.length === 0) {
-    gridEl.innerHTML = '<p class="category-empty">Nessun segno. Cercalo sopra per aggiungerlo.</p>';
+  if (category.words.length === 0) {
+    gridEl.innerHTML = '<p class="category-empty">Nessun segno in questa materia.</p>';
     return;
   }
   gridEl.innerHTML = '';
   category.words.forEach((w) => {
+    const isCover = category.cover && category.cover.videoUrl === w.videoUrl;
     const square = document.createElement('div');
-    square.className = 'square-card';
+    square.className = `square-card${isCover ? ' is-cover' : ''}`;
     square.innerHTML = `
-      <button class="square-remove" title="Rimuovi dalla categoria">✕</button>
-      <video src="${w.videoUrl}" poster="${w.poster || ''}" muted loop playsinline preload="none"></video>
+      <button class="square-remove editor-only" title="Rimuovi dalla materia">✕</button>
+      <button class="square-cover editor-only" title="Usa come copertina della materia">${STAR_ICON}</button>
+      <video src="${w.videoUrl}" poster="${w.poster || ''}" muted loop playsinline preload="metadata"></video>
       <span class="square-label">${escapeHtml(w.title)}</span>
     `;
     square.querySelector('.square-remove').addEventListener('click', async (e) => {
       e.stopPropagation();
-      const res = await fetch(`/api/categories/${category.id}/words?path=${encodeURIComponent(w.path)}`, { method: 'DELETE' });
-      const updatedCat = await res.json();
-      if (res.ok) renderCategoryGrid(gridEl, updatedCat);
+      try {
+        const updatedCat = await removeWordFromCategory(category.id, w.path);
+        if (updatedCat) { currentCategory = updatedCat; renderCategoryGrid(gridEl, updatedCat); }
+      } catch (err) {
+        showMessage(`Impossibile rimuovere: ${err.message}`);
+      }
     });
-    square.addEventListener('click', () => {
-      const video = square.querySelector('video');
-      gridEl.querySelectorAll('video').forEach((v) => {
-        if (v !== video) v.pause();
-      });
-      video.play();
+    square.querySelector('.square-cover').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await applyCover(w);
+      } catch (err) {
+        showMessage(`Impossibile impostare la copertina: ${err.message}`);
+      }
     });
-    square.addEventListener('dblclick', () => {
-      square.querySelector('video').pause();
-      openPlayer([w]);
-    });
+    attachHoverPreview(square, square.querySelector('video'));
+    square.addEventListener('click', () => openPlayer([w]));
     gridEl.appendChild(square);
   });
 }
 
-function renderCategoryPhrases(container, category) {
-  const phrases = category.phrases || [];
-  if (phrases.length === 0) {
-    container.innerHTML = '<p class="category-empty">Nessuna frase in questa categoria.</p>';
-    return;
+// ---------- Modale "Aggiungi segno" / "Cambia copertina" (cerca sui siti oppure registra) ----------
+const addwordModal = document.getElementById('addword-modal');
+const addwordTitleEl = document.getElementById('addword-title');
+const addwordSubtitleEl = document.getElementById('addword-subtitle');
+const addwordSearch = document.getElementById('addword-search');
+const addwordResults = document.getElementById('addword-results');
+const addwordRecordBtn = document.getElementById('addword-record-btn');
+const addwordCloseBtn = document.getElementById('addword-close');
+
+let addwordTimer = null;
+let addwordMode = 'word'; // 'word' aggiunge alla materia, 'cover' imposta la copertina della card
+
+async function addWordToCurrentCategory(word) {
+  const updatedCat = await addWordToCategory(currentCategory.id, word);
+  if (updatedCat) {
+    currentCategory = updatedCat;
+    renderCategoryGrid(detailGridEl, updatedCat);
+    renderCoverPreview(updatedCat);
   }
-  container.innerHTML = '';
-  phrases.forEach((ph) => {
-    const card = document.createElement('div');
-    card.className = 'category-phrase-card';
-    card.innerHTML = `
-      <div class="category-phrase-header">
-        <span class="category-phrase-name">${escapeHtml(ph.name)}</span>
-        <button class="icon-btn btn-danger-icon remove-phrase" title="Rimuovi dalla categoria">${ICONS.trash}</button>
-      </div>
-      <div class="category-phrase-thumbs"></div>
-    `;
-
-    const thumbs = card.querySelector('.category-phrase-thumbs');
-    ph.words.forEach((w) => {
-      const mini = document.createElement('div');
-      mini.className = 'mini-card';
-      mini.innerHTML = `
-        <video class="mini-video" src="${w.videoUrl}" poster="${w.poster || ''}" muted playsinline preload="none"></video>
-        <span class="mini-label">${escapeHtml(w.title)}</span>
-      `;
-      thumbs.appendChild(mini);
-    });
-
-    card.querySelector('.remove-phrase').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const res = await fetch(`/api/categories/${category.id}/phrases/${ph.phraseId}`, { method: 'DELETE' });
-      const updatedCat = await res.json();
-      if (res.ok) renderCategoryPhrases(container, updatedCat);
-    });
-    card.addEventListener('click', () => playMiniThumbs(thumbs));
-    card.addEventListener('dblclick', () => openPlayer(ph.words));
-
-    container.appendChild(card);
-  });
 }
 
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.category-search-box')) {
-    document.querySelectorAll('.category-search-results').forEach((el) => el.classList.remove('open'));
+function openAddwordModal(mode) {
+  addwordMode = mode;
+  if (mode === 'cover') {
+    addwordTitleEl.textContent = `Copertina di ${currentCategory.name}`;
+    addwordSubtitleEl.textContent = 'Il segno scelto diventa la copertina della card nel glossario, senza essere aggiunto ai segni della materia.';
+  } else {
+    addwordTitleEl.textContent = `Aggiungi un segno a ${currentCategory.name}`;
+    addwordSubtitleEl.textContent = 'Clicca i risultati per aggiungerli: puoi aggiungerne più di uno.';
   }
+  addwordSearch.value = '';
+  addwordResults.innerHTML = '';
+  addwordResults.classList.remove('open');
+  addwordModal.classList.remove('hidden');
+  addwordSearch.focus();
+}
+
+function closeAddwordModal() {
+  clearTimeout(addwordTimer);
+  addwordModal.classList.add('hidden');
+}
+
+openAddwordBtn.addEventListener('click', () => openAddwordModal('word'));
+changeCoverBtn.addEventListener('click', () => openAddwordModal('cover'));
+addwordCloseBtn.addEventListener('click', closeAddwordModal);
+addwordModal.addEventListener('click', (e) => { if (e.target === addwordModal) closeAddwordModal(); });
+
+addwordRecordBtn.addEventListener('click', () => {
+  closeAddwordModal();
+  openRecordModal(addwordMode === 'cover' ? applyCover : addWordToCurrentCategory);
+});
+
+addwordSearch.addEventListener('input', () => {
+  clearTimeout(addwordTimer);
+  const q = addwordSearch.value.trim();
+  if (!q) {
+    addwordResults.classList.remove('open');
+    addwordResults.innerHTML = '';
+    return;
+  }
+  addwordTimer = setTimeout(async () => {
+    addwordResults.innerHTML = '<div class="search-status">Ricerca in corso...</div>';
+    addwordResults.classList.add('open');
+    try {
+      const res = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(q)}`);
+      const results = await res.json();
+      if (!res.ok) throw new Error(results.error || 'Errore ricerca');
+      if (results.length === 0) {
+        addwordResults.innerHTML = '<div class="search-status">Nessun risultato</div>';
+        return;
+      }
+      addwordResults.innerHTML = '';
+      results.forEach((r) => {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.innerHTML = `
+          <span class="word-title">${escapeHtml(r.title)}</span>
+          <span class="word-meta">
+            <span class="word-category">${escapeHtml(r.category || '')}</span>
+            <span class="word-source word-source-${escapeHtml(r.source || '')}">${escapeHtml(r.source || '')}</span>
+          </span>
+        `;
+        item.addEventListener('click', async () => {
+          if (item.classList.contains('added')) return;
+          try {
+            const signRes = await fetch(`${SCRAPER_API_BASE}/api/sign?path=${encodeURIComponent(r.path)}`);
+            const sign = await signRes.json();
+            if (!signRes.ok) throw new Error(sign.error || 'Errore recupero segno');
+            const word = {
+              title: sign.title || r.title,
+              videoUrl: sign.videoUrl,
+              poster: sign.poster,
+              path: r.path,
+              source: r.source || null,
+            };
+            if (addwordMode === 'cover') {
+              await applyCover(word);
+              closeAddwordModal();
+              return;
+            }
+            await addWordToCurrentCategory(word);
+            item.classList.add('added');
+            item.querySelector('.word-category').textContent = 'Aggiunto';
+          } catch (err) {
+            showMessage(`Operazione non riuscita: ${err.message}`);
+          }
+        });
+        addwordResults.appendChild(item);
+      });
+    } catch (err) {
+      addwordResults.innerHTML = `<div class="search-status">Errore: ${escapeHtml(err.message)}</div>`;
+    }
+  }, 350);
 });
 
 function escapeHtml(str) {

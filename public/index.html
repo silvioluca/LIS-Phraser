@@ -4,25 +4,161 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LIS Phraser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>LIS Phraser</h1>
-    <nav class="tabs">
-      <button class="tab-btn active" data-tab="create">Crea frase</button>
-      <button class="tab-btn" data-tab="saved">Frasi salvate</button>
-      <button class="tab-btn" data-tab="categories">Categorie</button>
-    </nav>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="brand" data-nav="home">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M11 22v-9.5a1.5 1.5 0 0 1 3 0V17m0-6.5a1.5 1.5 0 0 1 3 0V17m0-5a1.5 1.5 0 0 1 3 0V18m0-3a1.5 1.5 0 0 1 3 0v3.5a6 6 0 0 1-6 6h-1.2a6 6 0 0 1-4.6-2.15L9 19.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>LIS Phraser</span>
+      </button>
+
+      <nav class="site-nav">
+        <button class="nav-link active" data-nav="home">Home</button>
+        <button class="nav-link" data-nav="glossario">Glossario</button>
+        <button class="nav-link" data-nav="dizionario">Dizionario</button>
+        <button class="nav-link" data-nav="saved">Frasi salvate</button>
+      </nav>
+
+      <div class="header-actions">
+        <button id="login-btn" class="btn-primary">Accedi</button>
+        <div id="user-box" class="user-box hidden">
+          <span id="user-email" class="user-email"></span>
+          <button id="signout-btn" class="icon-btn" title="Esci">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <section id="tab-create" class="tab-panel active">
+  <div id="page-home">
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <span class="eyebrow">Risorse didattiche in LIS</span>
+          <h1>Insegna e impara la Lingua dei Segni, materia per materia.</h1>
+          <p class="hero-lead">Un glossario di segni organizzato per argomento scolastico e uno strumento per comporre frasi in LIS, con video da dizionari affidabili e registrazioni personali.</p>
+          <div class="hero-actions">
+            <button class="btn-primary btn-lg" data-nav="glossario">Esplora il glossario</button>
+            <button class="btn-secondary btn-lg" data-nav="dizionario">Apri il dizionario</button>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-video-card">
+            <video src="https://media.spreadthesign.com/video/mp4/17/664596.mp4" poster="https://media.spreadthesign.com/video/jpg/17/664596.jpg" muted loop autoplay playsinline></video>
+            <div class="hero-video-caption">
+              <span class="caption-word">Ciao</span>
+              <span class="caption-source">Segno LIS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section">
+      <div class="container about-grid">
+        <div>
+          <span class="eyebrow">La lingua</span>
+          <h2>Cos'è la LIS</h2>
+        </div>
+        <div class="about-text">
+          <p>La Lingua dei Segni Italiana è una lingua visivo-gestuale, naturale e completa, con una propria grammatica e un proprio lessico. È la lingua della comunità sorda italiana ed è riconosciuta dalla legge come lingua a tutti gli effetti.</p>
+          <p>Portarla a scuola significa rendere le lezioni accessibili e dare a tutti gli studenti uno strumento in più per comunicare.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section home-section-alt">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Come funziona</span>
+          <h2>Tre strumenti per la didattica</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <h3>Glossario per materia</h3>
+            <p>Le materie del liceo, ognuna con i suoi segni, consultabili liberamente con anteprima video.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3>Dizionario e frasi</h3>
+            <p>Cerca le parole su SpreadTheSign e Signsuisse e mettile in sequenza per formare frasi complete.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3>Frasi salvate</h3>
+            <p>Con un account Google salvi le tue frasi e le ritrovi in qualsiasi momento, da qualsiasi dispositivo.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section">
+      <div class="container cta-band">
+        <div>
+          <h2>Pronto a iniziare?</h2>
+          <p>Glossario e dizionario sono liberi. Serve un account solo per salvare le frasi.</p>
+        </div>
+        <button class="btn-primary btn-lg" data-nav="dizionario">Apri il dizionario</button>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <span>LIS Phraser</span>
+        <span class="footer-note">Video dei segni da SpreadTheSign e Signsuisse.</span>
+      </div>
+    </footer>
+  </div>
+
+  <main id="page-app" class="hidden">
+    <section id="tab-dizionario" class="tab-panel active">
       <div class="create-stage is-empty">
+        <div class="page-intro page-intro-center">
+          <h1>Dizionario LIS</h1>
+          <p>Cerca una parola in italiano: troverai i segni corrispondenti nei dizionari SpreadTheSign e Signsuisse. Clicca un risultato per vederlo a schermo grande e aggiungerlo alla frase che stai componendo.</p>
+        </div>
+
         <div class="search-box search-box-main">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="search-input" type="text" placeholder="Cerca una parola (es. ciao)" autocomplete="off">
+          <input id="search-input" type="text" placeholder="Cerca una parola nel dizionario (es. ciao)" autocomplete="off">
           <div id="search-results" class="search-results"></div>
+        </div>
+
+        <div class="dict-tips">
+          <div class="dict-tip">
+            <span class="dict-tip-num">1</span>
+            <div>
+              <h3>Cerca</h3>
+              <p>Scrivi una parola e scegli il segno giusto tra i risultati. Il badge indica da quale dizionario proviene.</p>
+            </div>
+          </div>
+          <div class="dict-tip">
+            <span class="dict-tip-num">2</span>
+            <div>
+              <h3>Componi</h3>
+              <p>Ogni segno scelto si aggiunge in fondo alla frase. Riproduci la sequenza per vedere la frase completa.</p>
+            </div>
+          </div>
+          <div class="dict-tip">
+            <span class="dict-tip-num">3</span>
+            <div>
+              <h3>Salva</h3>
+              <p>Dai un nome alla frase e salvala: ti basta un account Google per ritrovarla in Frasi salvate.</p>
+            </div>
+          </div>
         </div>
 
         <div class="phrase-builder">
@@ -32,6 +168,8 @@
             <input id="phrase-name" type="text" placeholder="Nome frase (es. Buongiorno amico)">
             <input id="phrase-tags" type="text" placeholder="Tag, separati da virgola (opzionale)">
           </div>
+
+          <p class="section-hint">Passa il mouse su un segno per l'anteprima, cliccalo per vederlo a schermo grande, usa ✕ per toglierlo.</p>
 
           <div id="phrase-words" class="phrase-words">
             <p class="empty-hint">Cerca una parola sopra e aggiungila alla frase.</p>
@@ -46,20 +184,53 @@
     </section>
 
     <section id="tab-saved" class="tab-panel">
-      <h2>Frasi salvate</h2>
+      <div class="page-intro">
+        <h1>Frasi salvate</h1>
+        <p>Le frasi che hai composto nel Dizionario, visibili solo a te. Passa il mouse su una frase per vederne l'anteprima segno per segno, cliccala per riprodurla a schermo grande. Puoi modificarne nome e tag o eliminarla.</p>
+      </div>
       <div id="saved-list" class="saved-list"></div>
     </section>
 
-    <section id="tab-categories" class="tab-panel">
-      <h2>Categorie</h2>
-      <p class="section-hint">Raccolte di segni e frasi per argomento. Clicca un'intestazione per aprirla.</p>
+    <section id="tab-glossario" class="tab-panel">
+      <div id="glossario-grid-view">
+        <div class="page-intro">
+          <h1>Glossario per materia</h1>
+          <p>I segni della LIS raccolti per le materie del liceo. Ogni card mostra il segno della materia: passa il mouse per vederlo, cliccala per aprire tutti i segni di quell'argomento.</p>
+        </div>
 
-      <div class="new-category-box">
-        <input id="new-category-name" type="text" placeholder="Nuova categoria (es. Colori)">
-        <button id="add-category-btn" class="btn-primary">Crea</button>
+        <div class="new-category-box editor-only">
+          <input id="new-category-name" type="text" placeholder="Nuova materia (es. Scienze della Terra)">
+          <button id="add-category-btn" class="btn-primary">Crea</button>
+        </div>
+
+        <div id="subject-grid" class="subject-grid"></div>
       </div>
 
-      <div id="categories-list" class="categories-list"></div>
+      <div id="glossario-detail-view" class="hidden">
+        <button id="back-to-glossario" class="btn-secondary back-btn">← Torna al Glossario</button>
+
+        <div class="category-detail-header">
+          <h2 id="detail-category-name"></h2>
+          <div class="detail-actions editor-only">
+            <button id="open-addword-btn" class="btn-primary">+ Aggiungi</button>
+            <button id="change-cover-btn" class="btn-secondary">Cambia copertina</button>
+            <button id="delete-category-btn" class="icon-btn btn-danger-icon" title="Elimina materia"></button>
+          </div>
+        </div>
+
+        <div id="detail-cover" class="detail-cover editor-only">
+          <div class="detail-cover-video"></div>
+          <div>
+            <p class="detail-cover-label">Copertina della card</p>
+            <p id="detail-cover-title" class="detail-cover-title"></p>
+          </div>
+        </div>
+
+        <p class="section-hint">Passa il mouse su un segno per l'anteprima, cliccalo per vederlo a schermo grande con i controlli di riproduzione e velocità.</p>
+        <p class="section-hint editor-hint editor-only">Come editor puoi aggiungere segni con "+ Aggiungi" e toglierli con ✕. Per la copertina della card usa ★ su un segno della materia, oppure "Cambia copertina" per cercarne o registrarne uno nuovo.</p>
+
+        <div id="detail-grid" class="category-grid"></div>
+      </div>
     </section>
   </main>
 
@@ -82,6 +253,39 @@
     </div>
   </div>
 
+  <div id="addword-modal" class="player-modal hidden">
+    <div class="player-modal-content addword-content">
+      <button id="addword-close" class="player-close icon-btn" title="Chiudi">✕</button>
+      <h3 id="addword-title" class="addword-title"></h3>
+      <p id="addword-subtitle" class="addword-subtitle"></p>
+      <div class="search-box addword-search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="addword-search" type="text" placeholder="Cerca su SpreadTheSign e Signsuisse" autocomplete="off">
+      </div>
+      <div id="addword-results" class="search-results addword-results"></div>
+      <div class="addword-divider"><span>oppure</span></div>
+      <button id="addword-record-btn" class="btn-secondary record-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        Registra un video
+      </button>
+    </div>
+  </div>
+
+  <div id="record-modal" class="player-modal hidden">
+    <div class="player-modal-content">
+      <button id="record-close" class="player-close icon-btn" title="Chiudi">✕</button>
+      <video id="record-preview" muted playsinline autoplay></video>
+      <p id="record-status" class="player-label"></p>
+      <input id="record-title" type="text" placeholder="Nome del segno (es. nome scuola)" class="record-title-input">
+      <div class="record-controls">
+        <button id="record-start-btn" class="btn-primary">● Registra</button>
+        <button id="record-stop-btn" class="btn-secondary hidden">■ Stop</button>
+        <button id="record-retry-btn" class="btn-secondary hidden">↺ Riprova</button>
+        <button id="record-save-btn" class="btn-primary" disabled>Usa questo segno</button>
+      </div>
+    </div>
+  </div>
+
   <div id="dialog-modal" class="dialog-modal hidden">
     <div class="dialog-modal-content">
       <p id="dialog-message"></p>
@@ -92,6 +296,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
