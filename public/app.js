@@ -1,4 +1,4 @@
-import { auth, googleProvider, SCRAPER_API_BASE } from './firebase-init.js';
+import { auth, googleProvider, API_BASE } from './firebase-init.js';
 import {
   signInWithPopup, signOut, onAuthStateChanged,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -137,13 +137,19 @@ document.addEventListener('click', (e) => {
 async function runSearch(q) {
   searchResultsEl.innerHTML = '<div class="search-status">Ricerca in corso...</div>';
   searchResultsEl.classList.add('open');
+  const slowHint = setTimeout(() => {
+    const status = searchResultsEl.querySelector('.search-status');
+    if (status) status.textContent = 'Il server si sta avviando, il primo avvio può richiedere fino a un minuto...';
+  }, 4000);
   try {
-    const res = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(q)}`);
+    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`);
     const results = await res.json();
     if (!res.ok) throw new Error(results.error || 'Errore ricerca');
     renderSearchResults(results);
   } catch (err) {
     searchResultsEl.innerHTML = `<div class="search-status">Errore: ${escapeHtml(err.message)}</div>`;
+  } finally {
+    clearTimeout(slowHint);
   }
 }
 
@@ -172,7 +178,7 @@ async function addWordFromSearch(result) {
   searchResultsEl.classList.remove('open');
   searchInput.value = '';
   try {
-    const res = await fetch(`${SCRAPER_API_BASE}/api/sign?path=${encodeURIComponent(result.path)}`);
+    const res = await fetch(`${API_BASE}/api/sign?path=${encodeURIComponent(result.path)}`);
     const sign = await res.json();
     if (!res.ok) throw new Error(sign.error || 'Errore recupero segno');
     const word = {
@@ -844,7 +850,7 @@ addwordSearch.addEventListener('input', () => {
     addwordResults.innerHTML = '<div class="search-status">Ricerca in corso...</div>';
     addwordResults.classList.add('open');
     try {
-      const res = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`);
       const results = await res.json();
       if (!res.ok) throw new Error(results.error || 'Errore ricerca');
       if (results.length === 0) {
@@ -865,7 +871,7 @@ addwordSearch.addEventListener('input', () => {
         item.addEventListener('click', async () => {
           if (item.classList.contains('added')) return;
           try {
-            const signRes = await fetch(`${SCRAPER_API_BASE}/api/sign?path=${encodeURIComponent(r.path)}`);
+            const signRes = await fetch(`${API_BASE}/api/sign?path=${encodeURIComponent(r.path)}`);
             const sign = await signRes.json();
             if (!signRes.ok) throw new Error(sign.error || 'Errore recupero segno');
             const word = {
@@ -902,3 +908,7 @@ function escapeHtml(str) {
 }
 
 renderPhraseWords();
+
+// Il piano gratuito di Render sospende il server dopo un periodo di inattivita':
+// lo svegliamo subito, cosi' la prima ricerca dell'utente non attende l'avvio.
+fetch(`${API_BASE}/api/health`).catch(() => {});

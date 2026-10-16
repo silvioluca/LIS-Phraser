@@ -1,12 +1,15 @@
 {
   "name": "lis-phraser",
   "version": "1.0.0",
-  "description": "Costruisci frasi in LIS importando video da SpreadTheSign",
+  "description": "Glossario e dizionario LIS con video da SpreadTheSign e Signsuisse",
   "main": "server/index.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --env-file-if-exists=.env --watch server/index.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",

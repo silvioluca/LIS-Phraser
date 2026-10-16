@@ -1,7 +1,7 @@
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { db, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from './firebase-init.js';
+import { db, auth, API_BASE } from './firebase-init.js';
 
 function sanitizeTags(tags) {
   if (!Array.isArray(tags)) return [];
@@ -135,17 +135,26 @@ export async function removeWordFromCategory(id, wordPath) {
   return category;
 }
 
-// ---------- Video registrati dall'utente (Cloudinary, gratuito senza carta) ----------
+// ---------- Video registrati (Cloudinary, upload firmato dal server solo per gli editor) ----------
 
 export async function uploadRecordedVideo(blob) {
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error('Cloudinary non configurato: compila CLOUDINARY_CLOUD_NAME e CLOUDINARY_UPLOAD_PRESET in firebase-init.js');
-  }
+  if (!auth.currentUser) throw new Error('Accesso richiesto');
+  const idToken = await auth.currentUser.getIdToken();
+  const sigRes = await fetch(`${API_BASE}/api/upload-signature`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  const sig = await sigRes.json();
+  if (!sigRes.ok) throw new Error(sig.error || 'Autorizzazione upload negata');
+
   const formData = new FormData();
   formData.append('file', blob);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('api_key', sig.apiKey);
+  formData.append('timestamp', sig.timestamp);
+  formData.append('folder', sig.folder);
+  formData.append('signature', sig.signature);
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/video/upload`, {
     method: 'POST',
     body: formData,
   });

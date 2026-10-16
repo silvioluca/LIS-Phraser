@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: lis-phraser-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://silvioluca.github.io,http://localhost:3000
+      - key: CLOUDINARY_CLOUD_NAME
+        value: gvzo1phv
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

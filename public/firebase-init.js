@@ -16,14 +16,8 @@ export const db = getFirestore(firebaseApp);
 export const auth = getAuth(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
 
-// URL del backend di scraping (Express). In sviluppo locale puo' restare
-// vuoto (chiamate relative, stesso server). Dopo il deploy su Render/altro,
-// sostituire con l'URL pubblico del servizio, es. 'https://lis-phraser-api.onrender.com'.
-export const SCRAPER_API_BASE = '';
-
-// I video registrati dal sito vengono caricati su Cloudinary (storage gratuito
-// senza carta di credito, a differenza di Firebase Storage che ora richiede
-// il piano Blaze). Compila questi due valori dopo aver creato un account
-// gratuito su cloudinary.com e un upload preset "Unsigned".
-export const CLOUDINARY_CLOUD_NAME = 'gvzo1phv';
-export const CLOUDINARY_UPLOAD_PRESET = 'dzwtfmot';
+// Server Express (ricerca nei dizionari + firma degli upload Cloudinary).
+// In locale lo stesso server serve anche il sito; online gira su Render.
+const RENDER_API_URL = 'https://lis-phraser-api.onrender.com';
+const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+export const API_BASE = isLocal ? '' : RENDER_API_URL;
