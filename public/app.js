@@ -325,12 +325,27 @@ const recordStopBtn = document.getElementById('record-stop-btn');
 const recordRetryBtn = document.getElementById('record-retry-btn');
 const recordSaveBtn = document.getElementById('record-save-btn');
 const recordStatus = document.getElementById('record-status');
+const editPanel = document.getElementById('edit-panel');
+const trimStartInput = document.getElementById('trim-start');
+const trimEndInput = document.getElementById('trim-end');
+const trimFill = document.getElementById('trim-fill');
+const trimLabel = document.getElementById('trim-label');
+const cropBox = document.getElementById('crop-box');
+const cropResetBtn = document.getElementById('crop-reset');
+
+const MIN_TRIM_SECONDS = 0.3;
+const MIN_CROP = 0.15; // frazione minima del lato del video
 
 let mediaStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let recordedBlob = null;
 let recordOnSave = null;
+let recordStartedAt = 0;
+let videoDuration = 0;
+let trim = { start: 0, end: 0 };
+let crop = { x: 0, y: 0, w: 1, h: 1 }; // in frazioni del fotogramma
+let editLocked = false;
 
 async function openRecordModal(onSave) {
   recordOnSave = onSave;
@@ -338,6 +353,7 @@ async function openRecordModal(onSave) {
   recordTitleInput.value = '';
   recordedBlob = null;
   recordStatus.textContent = '';
+  recordVideo.ontimeupdate = null;
   setRecordButtons('idle');
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -358,8 +374,12 @@ function stopStream() {
 }
 
 function closeRecordModal() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.onstop = null;
+    mediaRecorder.stop();
+  }
   stopStream();
+  recordVideo.ontimeupdate = null;
   recordVideo.srcObject = null;
   recordVideo.removeAttribute('src');
   recordModal.classList.add('hidden');
@@ -367,11 +387,150 @@ function closeRecordModal() {
 
 function setRecordButtons(mode) {
   // mode: 'idle' | 'recording' | 'preview' | 'uploading'
+  const editing = mode === 'preview' || mode === 'uploading';
   recordStartBtn.classList.toggle('hidden', mode !== 'idle');
   recordStopBtn.classList.toggle('hidden', mode !== 'recording');
   recordRetryBtn.classList.toggle('hidden', mode !== 'preview');
   recordSaveBtn.disabled = mode !== 'preview';
   recordSaveBtn.textContent = mode === 'uploading' ? 'Caricamento...' : 'Usa questo segno';
+  editPanel.classList.toggle('hidden', !editing);
+  cropBox.classList.toggle('hidden', !editing);
+  editLocked = mode === 'uploading';
+  trimStartInput.disabled = editLocked;
+  trimEndInput.disabled = editLocked;
+}
+
+// I webm prodotti da MediaRecorder spesso dichiarano durata "Infinity": un seek
+// oltre la fine costringe il browser a calcolarla. In caso di fallimento si usa
+// la durata misurata durante la registrazione.
+function resolveDuration(video, fallback) {
+  return new Promise((resolve) => {
+    const done = () => {
+      video.removeEventListener('durationchange', onChange);
+      clearTimeout(timer);
+      const d = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : fallback;
+      video.currentTime = 0;
+      resolve(d);
+    };
+    const onChange = () => { if (Number.isFinite(video.duration)) done(); };
+    const timer = setTimeout(done, 1500);
+    const start = () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) { done(); return; }
+      video.addEventListener('durationchange', onChange);
+      video.currentTime = 1e7;
+    };
+    if (video.readyState >= 1) start();
+    else video.addEventListener('loadedmetadata', start, { once: true });
+  });
+}
+
+function formatSeconds(s) {
+  return `${s.toFixed(1)}s`;
+}
+
+function renderTrim() {
+  const startPct = (trim.start / videoDuration) * 100;
+  const endPct = (trim.end / videoDuration) * 100;
+  trimFill.style.left = `${startPct}%`;
+  trimFill.style.width = `${endPct - startPct}%`;
+  trimLabel.textContent = `${formatSeconds(trim.start)} – ${formatSeconds(trim.end)} (${formatSeconds(trim.end - trim.start)})`;
+}
+
+function onTrimInput(changed) {
+  const minGap = (MIN_TRIM_SECONDS / videoDuration) * 1000;
+  let s = Number(trimStartInput.value);
+  let e = Number(trimEndInput.value);
+  if (e - s < minGap) {
+    if (changed === 'start') s = Math.max(0, e - minGap);
+    else e = Math.min(1000, s + minGap);
+    trimStartInput.value = s;
+    trimEndInput.value = e;
+  }
+  trim = { start: (s / 1000) * videoDuration, end: (e / 1000) * videoDuration };
+  renderTrim();
+  recordVideo.currentTime = changed === 'end' ? Math.max(trim.start, trim.end - 0.5) : trim.start;
+}
+
+trimStartInput.addEventListener('input', () => onTrimInput('start'));
+trimEndInput.addEventListener('input', () => onTrimInput('end'));
+
+function renderCrop() {
+  cropBox.style.left = `${crop.x * 100}%`;
+  cropBox.style.top = `${crop.y * 100}%`;
+  cropBox.style.width = `${crop.w * 100}%`;
+  cropBox.style.height = `${crop.h * 100}%`;
+}
+
+function resetCrop() {
+  crop = { x: 0, y: 0, w: 1, h: 1 };
+  renderCrop();
+}
+
+cropResetBtn.addEventListener('click', resetCrop);
+
+cropBox.addEventListener('pointerdown', (e) => {
+  if (editLocked) return;
+  e.preventDefault();
+  const rect = cropBox.parentElement.getBoundingClientRect();
+  const corner = e.target.dataset.corner || null;
+  const startX = e.clientX;
+  const startY = e.clientY;
+  const orig = { ...crop };
+  cropBox.setPointerCapture(e.pointerId);
+
+  const onMove = (ev) => {
+    const dx = (ev.clientX - startX) / rect.width;
+    const dy = (ev.clientY - startY) / rect.height;
+    let { x, y, w, h } = orig;
+    if (!corner) {
+      x = Math.min(Math.max(0, orig.x + dx), 1 - orig.w);
+      y = Math.min(Math.max(0, orig.y + dy), 1 - orig.h);
+    } else {
+      if (corner.includes('w')) {
+        x = Math.min(Math.max(0, orig.x + dx), orig.x + orig.w - MIN_CROP);
+        w = orig.x + orig.w - x;
+      }
+      if (corner.includes('e')) w = Math.min(Math.max(MIN_CROP, orig.w + dx), 1 - orig.x);
+      if (corner.includes('n')) {
+        y = Math.min(Math.max(0, orig.y + dy), orig.y + orig.h - MIN_CROP);
+        h = orig.y + orig.h - y;
+      }
+      if (corner.includes('s')) h = Math.min(Math.max(MIN_CROP, orig.h + dy), 1 - orig.y);
+    }
+    crop = { x, y, w, h };
+    renderCrop();
+  };
+  const onUp = () => {
+    cropBox.removeEventListener('pointermove', onMove);
+    cropBox.removeEventListener('pointerup', onUp);
+    cropBox.removeEventListener('pointercancel', onUp);
+  };
+  cropBox.addEventListener('pointermove', onMove);
+  cropBox.addEventListener('pointerup', onUp);
+  cropBox.addEventListener('pointercancel', onUp);
+});
+
+async function startEditing() {
+  recordVideo.srcObject = null;
+  recordVideo.src = URL.createObjectURL(recordedBlob);
+  recordVideo.muted = true;
+  recordVideo.loop = false;
+  const measured = (performance.now() - recordStartedAt) / 1000;
+  videoDuration = await resolveDuration(recordVideo, measured);
+  trim = { start: 0, end: videoDuration };
+  trimStartInput.value = 0;
+  trimEndInput.value = 1000;
+  renderTrim();
+  resetCrop();
+  // Riproduzione in loop solo sulla parte selezionata.
+  recordVideo.ontimeupdate = () => {
+    if (recordVideo.currentTime >= trim.end || recordVideo.currentTime < trim.start - 0.05) {
+      recordVideo.currentTime = trim.start;
+    }
+  };
+  recordVideo.onended = () => { recordVideo.currentTime = trim.start; recordVideo.play(); };
+  recordVideo.play();
+  setRecordButtons('preview');
 }
 
 recordCloseBtn.addEventListener('click', closeRecordModal);
@@ -385,13 +544,9 @@ recordStartBtn.addEventListener('click', () => {
   mediaRecorder.onstop = () => {
     recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
     stopStream();
-    recordVideo.srcObject = null;
-    recordVideo.src = URL.createObjectURL(recordedBlob);
-    recordVideo.muted = true;
-    recordVideo.loop = true;
-    recordVideo.play();
-    setRecordButtons('preview');
+    startEditing();
   };
+  recordStartedAt = performance.now();
   mediaRecorder.start();
   setRecordButtons('recording');
   recordStatus.textContent = 'Registrazione in corso...';
@@ -403,6 +558,8 @@ recordStopBtn.addEventListener('click', () => {
 });
 
 recordRetryBtn.addEventListener('click', () => {
+  recordVideo.ontimeupdate = null;
+  recordVideo.onended = null;
   recordVideo.removeAttribute('src');
   recordedBlob = null;
   openRecordModal(recordOnSave);
@@ -417,8 +574,16 @@ recordSaveBtn.addEventListener('click', async () => {
   if (!recordedBlob) return;
   setRecordButtons('uploading');
   try {
-    const { videoUrl, path } = await uploadRecordedVideo(recordedBlob);
-    await recordOnSave({ title, videoUrl, poster: null, path, source: 'custom' });
+    const edits = {
+      start: trim.start,
+      end: trim.end,
+      duration: videoDuration,
+      crop: { ...crop },
+      frameWidth: recordVideo.videoWidth,
+      frameHeight: recordVideo.videoHeight,
+    };
+    const { videoUrl, poster, path } = await uploadRecordedVideo(recordedBlob, edits);
+    await recordOnSave({ title, videoUrl, poster, path, source: 'custom' });
     closeRecordModal();
   } catch (err) {
     setRecordButtons('preview');
@@ -820,7 +985,6 @@ function openAddwordModal(mode) {
   addwordResults.innerHTML = '';
   addwordResults.classList.remove('open');
   addwordModal.classList.remove('hidden');
-  addwordSearch.focus();
 }
 
 function closeAddwordModal() {

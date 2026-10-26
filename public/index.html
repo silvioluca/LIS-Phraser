@@ -274,8 +274,32 @@
   <div id="record-modal" class="player-modal hidden">
     <div class="player-modal-content">
       <button id="record-close" class="player-close icon-btn" title="Chiudi">✕</button>
-      <video id="record-preview" muted playsinline autoplay></video>
+      <div class="record-stage">
+        <video id="record-preview" muted playsinline autoplay></video>
+        <div id="crop-box" class="crop-box hidden">
+          <span class="crop-handle" data-corner="nw"></span>
+          <span class="crop-handle" data-corner="ne"></span>
+          <span class="crop-handle" data-corner="sw"></span>
+          <span class="crop-handle" data-corner="se"></span>
+        </div>
+      </div>
       <p id="record-status" class="player-label"></p>
+
+      <div id="edit-panel" class="edit-panel hidden">
+        <div class="edit-row-head">
+          <span>Durata: trascina i cursori per scegliere inizio e fine</span>
+          <span id="trim-label" class="edit-value"></span>
+        </div>
+        <div class="trim-slider">
+          <div class="trim-track"><div id="trim-fill" class="trim-fill"></div></div>
+          <input id="trim-start" type="range" min="0" max="1000" step="1" value="0" aria-label="Inizio">
+          <input id="trim-end" type="range" min="0" max="1000" step="1" value="1000" aria-label="Fine">
+        </div>
+        <div class="edit-row-head">
+          <span>Inquadratura: trascina il riquadro o i suoi angoli sul video</span>
+          <button id="crop-reset" type="button" class="link-btn">Ripristina</button>
+        </div>
+      </div>
       <input id="record-title" type="text" placeholder="Nome del segno (es. nome scuola)" class="record-title-input">
       <div class="record-controls">
         <button id="record-start-btn" class="btn-primary">● Registra</button>

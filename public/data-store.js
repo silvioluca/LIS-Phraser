@@ -137,12 +137,35 @@ export async function removeWordFromCategory(id, wordPath) {
 
 // ---------- Video registrati (Cloudinary, upload firmato dal server solo per gli editor) ----------
 
-export async function uploadRecordedVideo(blob) {
+// Taglio e ritaglio diventano una "trasformazione in ingresso": Cloudinary la applica
+// al caricamento e salva solo il video risultante, gia' convertito in MP4.
+function buildTransformation(edits) {
+  const steps = [];
+  const trimParts = [];
+  if (edits.start > 0.05) trimParts.push(`so_${edits.start.toFixed(2)}`);
+  if (edits.end < edits.duration - 0.05) trimParts.push(`eo_${edits.end.toFixed(2)}`);
+  if (trimParts.length) steps.push(trimParts.join(','));
+
+  const { crop, frameWidth: width, frameHeight: height } = edits;
+  const isFullFrame = crop.x <= 0.001 && crop.y <= 0.001 && crop.w >= 0.999 && crop.h >= 0.999;
+  if (!isFullFrame && width && height) {
+    const even = (n) => Math.max(2, Math.floor(n / 2) * 2); // H.264 richiede lati pari
+    const x = Math.round(crop.x * width);
+    const y = Math.round(crop.y * height);
+    const w = even(Math.min(crop.w * width, width - x));
+    const h = even(Math.min(crop.h * height, height - y));
+    steps.push(`c_crop,x_${x},y_${y},w_${w},h_${h}`);
+  }
+  return steps.join('/');
+}
+
+export async function uploadRecordedVideo(blob, edits) {
   if (!auth.currentUser) throw new Error('Accesso richiesto');
   const idToken = await auth.currentUser.getIdToken();
   const sigRes = await fetch(`${API_BASE}/api/upload-signature`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${idToken}` },
+    headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transformation: buildTransformation(edits) }),
   });
   const sig = await sigRes.json();
   if (!sigRes.ok) throw new Error(sig.error || 'Autorizzazione upload negata');
@@ -150,9 +173,8 @@ export async function uploadRecordedVideo(blob) {
   const formData = new FormData();
   formData.append('file', blob);
   formData.append('api_key', sig.apiKey);
-  formData.append('timestamp', sig.timestamp);
-  formData.append('folder', sig.folder);
   formData.append('signature', sig.signature);
+  Object.entries(sig.params).forEach(([k, v]) => formData.append(k, v));
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/video/upload`, {
     method: 'POST',
@@ -161,5 +183,9 @@ export async function uploadRecordedVideo(blob) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || 'Upload video fallito');
 
-  return { videoUrl: data.secure_url, path: `custom:${data.public_id}` };
+  return {
+    videoUrl: data.secure_url,
+    poster: `https://res.cloudinary.com/${sig.cloudName}/video/upload/so_0/v${data.version}/${data.public_id}.jpg`,
+    path: `custom:${data.public_id}`,
+  };
 }

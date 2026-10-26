@@ -80,15 +80,27 @@ app.post('/api/upload-signature', async (req, res) => {
     return res.status(502).json({ error: 'Verifica dei permessi non riuscita' });
   }
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  const toSign = `folder=${CLOUDINARY_FOLDER}&timestamp=${timestamp}`;
+  // Trasformazione in ingresso (taglio/ritaglio): Cloudinary salva solo il risultato.
+  const transformation = String((req.body && req.body.transformation) || '');
+  if (transformation.length > 200 || !/^[a-z0-9_.,/]*$/.test(transformation)) {
+    return res.status(400).json({ error: 'Trasformazione non valida' });
+  }
+
+  const params = {
+    folder: CLOUDINARY_FOLDER,
+    format: 'mp4',
+    timestamp: Math.floor(Date.now() / 1000),
+  };
+  if (transformation) params.transformation = transformation;
+
+  // Firma Cloudinary: parametri in ordine alfabetico "chiave=valore" uniti da & + segreto.
+  const toSign = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join('&');
   const signature = crypto.createHash('sha1').update(toSign + CLOUDINARY_API_SECRET).digest('hex');
 
   res.json({
     cloudName: CLOUDINARY_CLOUD_NAME,
     apiKey: CLOUDINARY_API_KEY,
-    folder: CLOUDINARY_FOLDER,
-    timestamp,
+    params,
     signature,
   });
 });

@@ -961,12 +961,144 @@ body.is-editor .detail-cover.editor-only { display: flex !important; }
 
 .record-trigger svg { width: 18px; height: 18px; }
 
-#record-preview {
-  width: 100%;
-  max-height: 50vh;
-  background: #000;
+/* Il contenitore prende esattamente le proporzioni del video (niente bande nere),
+   cosi' il riquadro di ritaglio, espresso in frazioni, corrisponde ai pixel reali. */
+.record-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  line-height: 0;
   border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
 }
+
+#record-preview {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 50vh;
+  min-width: 240px;
+  background: #000;
+}
+
+.crop-box {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  touch-action: none;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 2px solid var(--primary);
+  border-radius: 3px;
+}
+
+.crop-handle[data-corner="nw"] { left: -8px; top: -8px; cursor: nwse-resize; }
+.crop-handle[data-corner="ne"] { right: -8px; top: -8px; cursor: nesw-resize; }
+.crop-handle[data-corner="sw"] { left: -8px; bottom: -8px; cursor: nesw-resize; }
+.crop-handle[data-corner="se"] { right: -8px; bottom: -8px; cursor: nwse-resize; }
+
+.edit-panel {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.edit-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.edit-value {
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trim-slider {
+  position: relative;
+  height: 28px;
+  margin: 6px 0 14px;
+}
+
+.trim-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.trim-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+/* Due range sovrapposti: le tracce sono invisibili, restano cliccabili solo i cursori. */
+.trim-slider input[type="range"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.trim-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.trim-slider input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--primary);
+  cursor: pointer;
+}
+
+.trim-slider input[type="range"]::-moz-range-track { background: none; }
 
 .record-title-input {
   width: 100%;
